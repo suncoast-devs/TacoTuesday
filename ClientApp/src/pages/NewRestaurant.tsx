@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { useMutation } from 'react-query'
 import { useHistory } from 'react-router'
-import { RestaurantType } from '../types'
+import { Link } from 'react-router-dom'
+import { APIError, RestaurantType } from '../types'
 
 async function submitNewRestaurant(restaurantToCreate: RestaurantType) {
   const response = await fetch('/api/Restaurants', {
@@ -10,10 +11,16 @@ async function submitNewRestaurant(restaurantToCreate: RestaurantType) {
     body: JSON.stringify(restaurantToCreate),
   })
 
-  return response.json()
+  if (response.ok) {
+    return response.json()
+  } else {
+    throw await response.json()
+  }
 }
 
 export function NewRestaurant() {
+  const [errorMessage, setErrorMessage] = useState('')
+
   const [newRestaurant, setNewRestaurant] = useState<RestaurantType>({
     name: '',
     description: '',
@@ -24,6 +31,9 @@ export function NewRestaurant() {
   const createNewRestaurant = useMutation(submitNewRestaurant, {
     onSuccess: function () {
       history.push('/')
+    },
+    onError: function (apiError: APIError) {
+      setErrorMessage(Object.values(apiError.errors).join(' '))
     },
   })
 
@@ -47,12 +57,13 @@ export function NewRestaurant() {
   return (
     <main className="page">
       <nav>
-        <a href="/">
+        <Link to="/">
           <i className="fa fa-home"></i>
-        </a>
+        </Link>
         <h2>Add a Restaurant</h2>
       </nav>
       <form onSubmit={handleFormSubmit}>
+        {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
         <p className="form-input">
           <label htmlFor="name">Name</label>
           <input
